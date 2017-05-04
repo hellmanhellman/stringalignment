@@ -44,3 +44,27 @@ maximaBy valueFcn xs = [a | a <- xs, valueFcn a == valueFcn (maximumBy (comparin
 
 main = print $ similarityScore string1 string2
 -- main = print $ maximaBy length ["cs", "efd", "lth", "it"]
+
+
+attachHeads :: a -> a -> [([a],[a])] -> [([a],[a])]
+attachHeads h1 h2 aList = [(h1:xs,h2:ys) | (xs,ys) <- aList]
+
+
+optAlignments :: String -> String -> [(String, String)]
+optAlignments xs ys = [tuple | tuple <- allCombinations xs ys, tupleScore tuple == bestScore]
+  where bestScore = similarityScore xs ys
+
+allCombinations :: String -> String -> [(String, String)]
+allCombinations [] xs = [(replicate (length xs) '-', xs)]
+allCombinations xs [] = [(xs, (replicate (length xs) '-'))]
+allCombinations (x:xs) (y:ys) = attachHeads x y (allCombinations xs ys)
+                             ++ attachHeads x '-' (allCombinations xs (y:ys))
+                             ++ attachHeads '-' y (allCombinations (x:xs) ys)
+
+tupleScore :: (String, String) -> Int
+tupleScore tuple = simpleScore (fst tuple) (snd tuple)
+
+simpleScore :: String -> String -> Int
+simpleScore [] xs = scoreSpace * (length xs)
+simpleScore xs [] = scoreSpace * (length xs)
+simpleScore (x:xs) (y:ys) = (simpleScore xs ys) + (score x y)
