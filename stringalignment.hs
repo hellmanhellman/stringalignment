@@ -42,19 +42,20 @@ maximaBy valueFcn xs = [a | a <- xs, valueFcn a == valueFcn (maximumBy (comparin
 
 
 
-main = print $ similarityScore string1 string2
--- main = print $ maximaBy length ["cs", "efd", "lth", "it"]
+
+
+main = outputOptAlignments string1 string2
 
 
 attachHeads :: a -> a -> [([a],[a])] -> [([a],[a])]
 attachHeads h1 h2 aList = [(h1:xs,h2:ys) | (xs,ys) <- aList]
 
 
-optAlignments :: String -> String -> [(String, String)]
+optAlignments :: String -> String -> [AlignmentType]
 optAlignments xs ys = [tuple | tuple <- allCombinations xs ys, tupleScore tuple == bestScore]
   where bestScore = similarityScore xs ys
 
-allCombinations :: String -> String -> [(String, String)]
+allCombinations :: String -> String -> [AlignmentType]
 allCombinations [] xs = [(replicate (length xs) '-', xs)]
 allCombinations xs [] = [(xs, (replicate (length xs) '-'))]
 allCombinations (x:xs) (y:ys) = attachHeads x y (allCombinations xs ys)
@@ -68,3 +69,23 @@ simpleScore :: String -> String -> Int
 simpleScore [] xs = scoreSpace * (length xs)
 simpleScore xs [] = scoreSpace * (length xs)
 simpleScore (x:xs) (y:ys) = (simpleScore xs ys) + (score x y)
+
+spacey :: String -> String
+spacey (x:[]) = [x]
+spacey (x:xs) = [x,' '] ++ spacey xs
+
+
+outputOptAlignments :: String -> String -> IO ()
+outputOptAlignments xs ys = do  putStrLn $ "There are " ++ show (length result) ++ " optimal alignments:"
+                                putStrLn ""
+                                printAlignments result
+                                putStrLn ""
+                                putStrLn $ "There were " ++ show (length result) ++ " optimal alignments!"
+                            where result = optAlignments xs ys
+                                  printAlignments :: [AlignmentType] -> IO ()
+                                  printAlignments (x:xs) = do putStrLn $ spacey (fst x)
+                                                              putStrLn $ spacey (snd x)
+                                                              putStrLn ""
+                                                              if xs /= [] then printAlignments xs
+                                                                else return ()
+
