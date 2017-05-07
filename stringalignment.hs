@@ -30,6 +30,23 @@ similarityScore (x:xs) (y:ys) = max3 ((similarityScore xs ys) + (score x y))
                                      ((similarityScore xs (y:ys)) + (score x '-'))
                                      ((similarityScore (x:xs) ys) + (score '-' y))
 
+similarityScore' :: String -> String -> Int
+similarityScore' xs ys = simScore (length xs) (length ys)
+  where
+    simScore :: Int -> Int -> Int
+    simScore i j = simTable!!i!!j
+    simTable = [[ simEntry i j | j<-[0..]] | i<-[0..] ]
+
+    simEntry :: Int -> Int -> Int
+    simEntry 0 j = scoreSpace*j -- Following the sides of the table (adding spaces).
+    simEntry i 0 = scoreSpace*i -- Following the sides of the table (adding spaces).
+    simEntry i j = max3 ((simScore (i-1) (j-1)) + (score x y))
+                        ((simScore (i-1)    j ) + (score x '-'))
+                        ((simScore     i (j-1)) + (score '-' y))
+      where
+         x = xs!!(i-1)
+         y = ys!!(j-1)
+
 score :: Char -> Char -> Int
 score _ '-' = scoreSpace
 score '-' _  = scoreSpace
@@ -44,7 +61,7 @@ maximaBy valueFcn xs = [a | a <- xs, valueFcn a == valueFcn (maximumBy (comparin
 
 
 
-main = outputOptAlignments string1 string2
+main = print $ similarityScore' string1 string2
 
 
 attachHeads :: a -> a -> [([a],[a])] -> [([a],[a])]
@@ -53,7 +70,7 @@ attachHeads h1 h2 aList = [(h1:xs,h2:ys) | (xs,ys) <- aList]
 
 optAlignments :: String -> String -> [AlignmentType]
 optAlignments xs ys = [tuple | tuple <- allCombinations xs ys, tupleScore tuple == bestScore]
-  where bestScore = similarityScore xs ys
+  where bestScore = similarityScore' xs ys
 
 allCombinations :: String -> String -> [AlignmentType]
 allCombinations [] xs = [(replicate (length xs) '-', xs)]
