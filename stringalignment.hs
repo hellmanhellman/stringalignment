@@ -67,25 +67,45 @@ main = print $ similarityScore' string1 string2
 attachHeads :: a -> a -> [([a],[a])] -> [([a],[a])]
 attachHeads h1 h2 aList = [(h1:xs,h2:ys) | (xs,ys) <- aList]
 
+attachTails :: a -> a -> [([a],[a])] -> [([a],[a])]
+attachTails h1 h2 aList = [(xs++[h1],ys++[h2]) | (xs,ys) <- aList]
 
 optAlignments :: String -> String -> [AlignmentType]
-optAlignments xs ys = [tuple | tuple <- allCombinations xs ys, tupleScore tuple == bestScore]
-  where bestScore = similarityScore' xs ys
+optAlignments xs ys = snd (optAlign (length xs) (length ys))
+        where
+          optAlign :: Int -> Int -> (Int, [AlignmentType])
+          optAlign i j = table!!i!!j
+          table = [[optEntry i j | j <- [0..]] | i <- [0..]]
+          
+          optEntry :: Int -> Int -> (Int, [AlignmentType])
+          optEntry 0 j = (scoreSpace*j, [(replicate j '-',take j  ys)])
+          optEntry i 0 = (scoreSpace*i, [(take i xs, replicate i '-')])
+          optEntry i j  = (simScore, [alignment | alignment <- alignments, alignmentScore alignment == simScore])
+--          optEntry i j  = (simScore, maximaBy alignmentScore alignments) -- this is slow
+            where
+              
+              ls1 | score == bestAdjacentScore = attachTails x y (snd (optAlign (i-1) (j-1)))
+                  | otherwise                  = []
+                 where score = fst (optAlign (i-1) (j-1))
+                
+              ls2 | score == bestAdjacentScore = attachTails '-'  y  (snd (optAlign i (j-1)))
+                  | otherwise                  = []
+                 where score = fst (optAlign i (j-1))
+                 
+              ls3 | score == bestAdjacentScore = attachTails x  '-'  (snd (optAlign (i-1) j))
+                  | otherwise                  = []
+                 where score = fst (optAlign (i-1) j)
+                 
+              bestAdjacentScore = max3 (fst (optAlign (i-1) (j-1))) (fst (optAlign i (j-1))) (fst (optAlign (i-1) j))
+              alignments =  ls1 ++ ls2 ++ ls3
+              simScore = similarityScore' (take i xs) (take j ys)
+              x = xs!!(i-1)
+              y = ys!!(j-1)
 
-allCombinations :: String -> String -> [AlignmentType]
-allCombinations [] xs = [(replicate (length xs) '-', xs)]
-allCombinations xs [] = [(xs, (replicate (length xs) '-'))]
-allCombinations (x:xs) (y:ys) = attachHeads x y (allCombinations xs ys)
-                             ++ attachHeads x '-' (allCombinations xs (y:ys))
-                             ++ attachHeads '-' y (allCombinations (x:xs) ys)
-
-tupleScore :: (String, String) -> Int
-tupleScore tuple = simpleScore (fst tuple) (snd tuple)
-
-simpleScore :: String -> String -> Int
-simpleScore [] xs = scoreSpace * (length xs)
-simpleScore xs [] = scoreSpace * (length xs)
-simpleScore (x:xs) (y:ys) = (simpleScore xs ys) + (score x y)
+alignmentScore :: (String, String) -> Int
+alignmentScore ([], xs) = scoreSpace * (length xs)
+alignmentScore (xs, []) = scoreSpace * (length xs)
+alignmentScore ((x:xs), (y:ys)) = alignmentScore (xs,ys) + score x y
 
 spacey :: String -> String
 spacey (x:[]) = [x]
